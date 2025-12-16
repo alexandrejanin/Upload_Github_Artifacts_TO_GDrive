@@ -33,6 +33,24 @@ const REPLACE_MODES = {
 };
 
 /**
+ * MIME type mapping for Google Drive conversion
+ */
+const MIMETYPE_MAP = {
+    '.case': 'application/vnd.google-apps.spreadsheet', // Special case handling if needed
+    '.csv': 'application/vnd.google-apps.spreadsheet',
+    '.xlsx': 'application/vnd.google-apps.spreadsheet',
+    '.xls': 'application/vnd.google-apps.spreadsheet',
+    '.ods': 'application/vnd.google-apps.spreadsheet',
+    '.md': 'application/vnd.google-apps.document',
+    '.txt': 'application/vnd.google-apps.document',
+    '.docx': 'application/vnd.google-apps.document',
+    '.doc': 'application/vnd.google-apps.document',
+    '.html': 'application/vnd.google-apps.document',
+    '.pptx': 'application/vnd.google-apps.presentation',
+    '.ppt': 'application/vnd.google-apps.presentation',
+};
+
+/**
  * Get input value and log value to debug
  *
  * @param {string} name
@@ -351,9 +369,10 @@ async function updateFile(fileId, fileName, filePath) {
  * 
  * @param {object} fileMetadata 
  * @param {string} filePath 
+ * @param {boolean} convertFiles
  * @returns {object}
  */
-function getUploadParams(fileMetadata, filePath) {
+function getUploadParams(fileMetadata, filePath, convertFiles = false) {
     const stats = fs.statSync(filePath);
     const fileSize = stats.size;
     // Switch to resumable upload if file size > 5MB
@@ -363,6 +382,15 @@ function getUploadParams(fileMetadata, filePath) {
         console.log(`File size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB. Using Resumable Upload.`);
     } else {
         console.log(`File size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB. Using Multipart Upload.`);
+    }
+
+    // Handle file conversion
+    if (convertFiles) {
+        const ext = path.extname(filePath).toLowerCase();
+        if (MIMETYPE_MAP[ext]) {
+            fileMetadata.mimeType = MIMETYPE_MAP[ext];
+            console.log(`Converting '${ext}' file to Google format: ${MIMETYPE_MAP[ext]}`);
+        }
     }
 
     return {
@@ -384,10 +412,11 @@ function getUploadParams(fileMetadata, filePath) {
  * @param {string} replaceMode How to handle existing files with the same name
  * @param {boolean} override Whether or not to remove and replace the current file if it exists (legacy parameter)
  * @param {string} uploadFolderId Id of the new files parent
+ * @param {boolean} convertFiles Whether to convert files to Google formats
  * @returns {Promise<import('googleapis').drive_v3.Schema$File>}
  *          Response from the google drive files create api
  */
-async function uploadFile(fileName, filePath, replaceMode, override, uploadFolderId) {
+async function uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles = false) {
     console.log(`Processing ${fileName} ...`);
     actions.debug(`fileName: ${fileName}`);
     actions.debug(`filePath: ${filePath}`);
@@ -450,7 +479,7 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
 
     actions.debug(`Creating ${fileMetadata.name} in ${fileMetadata.parents[0]}`);
 
-    const params = getUploadParams(fileMetadata, filePath);
+    const params = getUploadParams(fileMetadata, filePath, convertFiles);
 
     const createFileOperation = async () => {
         return DRIVE.files.create(params);
@@ -530,6 +559,7 @@ async function main() {
         const filename = getInputAndDebug('name', { required: false });
         let replaceMode = getInputAndDebug('replace_mode', { required: false }) || REPLACE_MODES.ADD_NEW;
         const maxRetentionCount = parseInt(getInputAndDebug('max_retention_count', { required: false }) || '0', 10);
+        const convertFiles = getBooleanInputAndDebug('convert_files', { required: false });
 
         // Validate inputs
         validateTarget(target);
@@ -603,7 +633,7 @@ async function main() {
 
                 if (!fs.lstatSync(filePath).isDirectory()) {
                     try {
-                        const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId);
+                        const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles);
                         uploadCount++;
                         uploadedFiles.push(result);
                     } catch (error) {
@@ -623,7 +653,7 @@ async function main() {
                 throw new Error(`Target is a directory: ${filePath}. Please specify a file or use a glob pattern.`);
             }
 
-            const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId);
+            const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles);
             uploadCount++;
             uploadedFiles.push(result);
         }

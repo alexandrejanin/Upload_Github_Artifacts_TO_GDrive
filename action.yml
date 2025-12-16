@@ -35,6 +35,11 @@ inputs:
     description: 'Optional, number of most recent files to keep in the folder. Older files will be deleted. Set to 0 to disable (default).'
     required: false
     default: 0
+  convert_files:
+    description: 'Optional, if set to true, automatically converts supported files (csv, md, txt, xlsx) to Google Docs/Sheets/Slides formats.'
+    required: false
+    default: false
+    type: boolean
 runs:
   using: 'node20'
   main: 'dist/index.js'

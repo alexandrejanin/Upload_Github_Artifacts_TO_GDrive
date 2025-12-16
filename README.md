@@ -42,6 +42,7 @@ steps:
 - Secure handling of Google Drive credentials
 - Multiple file handling strategies (delete, update, or add new)
 - Automated Retention Policy (keep only N most recent files)
+- Automatic format conversion (e.g., CSV → Google Sheets, Markdown → Google Docs)
 - Smart handling of large files (automatically switches to resumable upload for files > 5MB)
 
 ## 🔧 Setting Up Google Drive API
@@ -181,6 +182,7 @@ steps:
 | `override` | No | If set true, delete files with the same name before uploading. |
 | `replace_mode` | No | Determines how to handle existing files with the same name. Options: `delete_first`, `update_in_place`, or `add_new` (default) |
 | `max_retention_count` | No | Number of most recent files to keep in the parent folder. Older files will be deleted. Set to `0` to disable (default). |
+| `convert_files` | No | If set to `true`, the action automatically converts supported files (e.g., `.csv`, `.md`, `.xlsx`) into their native editable Google formats (Sheets, Docs, etc.). Default is `false`. |
 
 ## 📤 Output Parameters
 

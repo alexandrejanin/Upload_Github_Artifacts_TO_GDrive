@@ -82,6 +82,39 @@ describe('Unit Tests', () => {
 
             expect(params.uploadType).toBe('multipart');
         });
+
+        test('should set mimeType for convertible files when enabled', () => {
+            const file = 'test.csv';
+            fs.writeFileSync(file, 'content');
+            try {
+                const params = getUploadParams({ name: 'test.csv' }, file, true);
+                expect(params.requestBody.mimeType).toBe('application/vnd.google-apps.spreadsheet');
+            } finally {
+                fs.unlinkSync(file);
+            }
+        });
+
+        test('should not set mimeType when disabled', () => {
+            const file = 'test.csv';
+            fs.writeFileSync(file, 'content');
+            try {
+                const params = getUploadParams({ name: 'test.csv' }, file, false);
+                expect(params.requestBody.mimeType).toBeUndefined();
+            } finally {
+                fs.unlinkSync(file);
+            }
+        });
+
+        test('should ignore non-convertible files', () => {
+            const file = 'test.jpg';
+            fs.writeFileSync(file, 'content');
+            try {
+                const params = getUploadParams({ name: 'test.jpg' }, file, true);
+                expect(params.requestBody.mimeType).toBeUndefined();
+            } finally {
+                fs.unlinkSync(file);
+            }
+        });
     });
 
     describe('splitFolder', () => {
