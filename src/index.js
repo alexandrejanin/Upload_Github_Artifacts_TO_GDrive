@@ -311,6 +311,16 @@ async function updateFile(fileId, fileName, filePath) {
     console.log(`Found existing file '${fileName}'. Updating in place...`);
     actions.debug(`Updating ${fileName}(${fileId})`);
 
+    const stats = fs.statSync(filePath);
+    const fileSize = stats.size;
+    const isResumable = fileSize > 5 * 1024 * 1024; // 5MB
+
+    if (isResumable) {
+        console.log(`File size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB. Using Resumable Upload.`);
+    } else {
+        console.log(`File size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB. Using Multipart Upload.`);
+    }
+
     const fileData = {
         body: fs.createReadStream(filePath),
     };
@@ -319,6 +329,7 @@ async function updateFile(fileId, fileName, filePath) {
         return DRIVE.files.update({
             fileId,
             media: fileData,
+            uploadType: isResumable ? 'resumable' : 'multipart',
             fields: 'id,name,webViewLink',
             supportsAllDrives: true,
         });
@@ -332,6 +343,36 @@ async function updateFile(fileId, fileName, filePath) {
     }
 
     return result.data;
+}
+
+/**
+ * Helper to get upload parameters + logging
+ * 
+ * @param {object} fileMetadata 
+ * @param {string} filePath 
+ * @returns {object}
+ */
+function getUploadParams(fileMetadata, filePath) {
+    const stats = fs.statSync(filePath);
+    const fileSize = stats.size;
+    // Switch to resumable upload if file size > 5MB
+    const isResumable = fileSize > 5 * 1024 * 1024;
+
+    if (isResumable) {
+        console.log(`File size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB. Using Resumable Upload.`);
+    } else {
+        console.log(`File size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB. Using Multipart Upload.`);
+    }
+
+    return {
+        requestBody: fileMetadata,
+        media: {
+            body: fs.createReadStream(filePath)
+        },
+        uploadType: isResumable ? 'resumable' : 'multipart',
+        fields: 'id,name,webViewLink',
+        supportsAllDrives: true,
+    };
 }
 
 /**
@@ -408,18 +449,10 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
 
     actions.debug(`Creating ${fileMetadata.name} in ${fileMetadata.parents[0]}`);
 
-    const fileData = {
-        body: fs.createReadStream(filePath),
-    };
+    const params = getUploadParams(fileMetadata, filePath);
 
     const createFileOperation = async () => {
-        return DRIVE.files.create({
-            requestBody: fileMetadata,
-            media: fileData,
-            uploadType: 'multipart',
-            fields: 'id,name,webViewLink',
-            supportsAllDrives: true,
-        });
+        return DRIVE.files.create(params);
     };
 
     const result = await withRetry(createFileOperation, `Upload file ${fileName}`);
@@ -590,5 +623,6 @@ module.exports = {
     getBooleanInputAndDebug,
     getUploadFolderId,
     findExistingFiles,
+    getUploadParams,
     REPLACE_MODES // Exporting constants is often useful too
 };

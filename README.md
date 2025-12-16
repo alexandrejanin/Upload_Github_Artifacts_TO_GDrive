@@ -41,6 +41,7 @@ steps:
 - Support for custom file naming
 - Secure handling of Google Drive credentials
 - Multiple file handling strategies (delete, update, or add new)
+- Smart handling of large files (automatically switches to resumable upload for files > 5MB)
 
 ## 🔧 Setting Up Google Drive API
 
