@@ -5,6 +5,7 @@ const {
     validateTarget,
     validateReplaceMode,
     getUploadParams,
+    applyRetentionPolicy,
     REPLACE_MODES
 } = require('../src/index.js');
 
@@ -122,6 +123,60 @@ describe('Unit Tests', () => {
             } finally {
                 fs.unlinkSync(tempFile);
             }
+        });
+    });
+
+    describe('applyRetentionPolicy', () => {
+        const mockFolderId = 'folder-123';
+        const mockDrive = {
+            files: {
+                list: jest.fn(),
+                delete: jest.fn()
+            }
+        };
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
+
+        test('should do nothing if maxCount is 0', async () => {
+            await applyRetentionPolicy(mockDrive, mockFolderId, 0);
+            expect(mockDrive.files.list).not.toHaveBeenCalled();
+        });
+
+        test('should do nothing if file count is <= maxCount', async () => {
+            mockDrive.files.list.mockResolvedValue({
+                data: { files: [{ id: '1' }, { id: '2' }] }
+            });
+
+            await applyRetentionPolicy(mockDrive, mockFolderId, 5);
+
+            expect(mockDrive.files.list).toHaveBeenCalled();
+            expect(mockDrive.files.delete).not.toHaveBeenCalled();
+        });
+
+        test('should delete excess files', async () => {
+            // Return 3 files, keep 1. Should delete 2 (the oldest ones/last ones in sorted list)
+            // Note: The code sorts by createdTime desc (newest first).
+            // So if we have [newest, middle, oldest], and max=1, we keep newest.
+            // We delete middle and oldest.
+
+            const files = [
+                { id: 'new', name: 'new.zip' },
+                { id: 'mid', name: 'mid.zip' },
+                { id: 'old', name: 'old.zip' }
+            ];
+
+            mockDrive.files.list.mockResolvedValue({
+                data: { files: files }
+            });
+            mockDrive.files.delete.mockResolvedValue({});
+
+            await applyRetentionPolicy(mockDrive, mockFolderId, 1);
+
+            expect(mockDrive.files.delete).toHaveBeenCalledTimes(2);
+            expect(mockDrive.files.delete).toHaveBeenCalledWith({ fileId: 'mid', supportsAllDrives: true });
+            expect(mockDrive.files.delete).toHaveBeenCalledWith({ fileId: 'old', supportsAllDrives: true });
         });
     });
 });

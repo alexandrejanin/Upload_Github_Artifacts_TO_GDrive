@@ -41,6 +41,7 @@ steps:
 - Support for custom file naming
 - Secure handling of Google Drive credentials
 - Multiple file handling strategies (delete, update, or add new)
+- Automated Retention Policy (keep only N most recent files)
 - Smart handling of large files (automatically switches to resumable upload for files > 5MB)
 
 ## 🔧 Setting Up Google Drive API
@@ -179,6 +180,7 @@ steps:
 | `owner` | No | The email address of a user account that has access to the drive folder and will get the ownership of the file after its creation. To use this feature you must grant your service account a [domain-wide delegation of authority](https://developers.google.com/admin-sdk/directory/v1/guides/delegation) beforehand. |
 | `override` | No | If set true, delete files with the same name before uploading. |
 | `replace_mode` | No | Determines how to handle existing files with the same name. Options: `delete_first`, `update_in_place`, or `add_new` (default) |
+| `max_retention_count` | No | Number of most recent files to keep in the parent folder. Older files will be deleted. Set to `0` to disable (default). |
 
 ## 📤 Output Parameters
 

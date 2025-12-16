@@ -280,16 +280,17 @@ async function findExistingFiles(fileName, uploadFolderId) {
 /**
  * Delete an existing file
  * 
+ * @param {object} drive - Google Drive API instance
  * @param {string} fileId - ID of the file to delete
  * @param {string} fileName - Name of the file (for logging)
  * @returns {Promise<void>}
  */
-async function deleteFile(fileId, fileName) {
+async function deleteFile(drive, fileId, fileName) {
     console.log(`Found existing file '${fileName}'. Removing...`);
     actions.debug(`Removing ${fileName}(${fileId})`);
 
     const deleteFileOperation = async () => {
-        return DRIVE.files.delete({
+        return drive.files.delete({
             fileId,
             supportsAllDrives: true,
         });
@@ -419,7 +420,7 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
         if (effectiveReplaceMode === REPLACE_MODES.DELETE_FIRST) {
             // Delete all existing files with the same name
             for (const file of existingFiles) {
-                await deleteFile(file.id, file.name);
+                await deleteFile(DRIVE, file.id, file.name);
             }
         } else if (effectiveReplaceMode === REPLACE_MODES.UPDATE_IN_PLACE) {
             // Update the first file in place and return
@@ -472,6 +473,51 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
     return result.data;
 }
 
+/**
+ * Apply retention policy to keep only the most recent files
+ * 
+ * @param {object} drive - Google Drive API instance
+ * @param {string} folderId - ID of the folder to clean
+ * @param {number} maxCount - Maximum number of files to keep (0 to disable)
+ * @returns {Promise<void>}
+ */
+async function applyRetentionPolicy(drive, folderId, maxCount) {
+    if (maxCount <= 0) {
+        return;
+    }
+
+    console.log(`Applying retention policy: ensuring max ${maxCount} files in folder...`);
+
+    const listFilesOperation = async () => {
+        return drive.files.list({
+            q: `'${folderId}' in parents and trashed=false`,
+            orderBy: 'createdTime desc',
+            fields: 'files(id, name, createdTime)',
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
+            pageSize: 1000 // Ensure we get enough files to check retention
+        });
+    };
+
+    const { data: { files } } = await withRetry(listFilesOperation, `List files for retention in ${folderId}`);
+
+    if (files.length > maxCount) {
+        const filesToDelete = files.slice(maxCount);
+        console.log(`Found ${files.length} files. Deleting ${filesToDelete.length} old files...`);
+
+        for (const file of filesToDelete) {
+            try {
+                await deleteFile(drive, file.id, file.name);
+            } catch (error) {
+                console.error(`Failed to delete old file ${file.name}: ${error.message}`);
+                // Continue deleting others even if one fails
+            }
+        }
+    } else {
+        console.log(`Found ${files.length} files. No deletion needed.`);
+    }
+}
+
 async function main() {
     try {
         // Get configuration input
@@ -483,6 +529,7 @@ async function main() {
         const override = getBooleanInputAndDebug('override', { required: false });
         const filename = getInputAndDebug('name', { required: false });
         let replaceMode = getInputAndDebug('replace_mode', { required: false }) || REPLACE_MODES.ADD_NEW;
+        const maxRetentionCount = parseInt(getInputAndDebug('max_retention_count', { required: false }) || '0', 10);
 
         // Validate inputs
         validateTarget(target);
@@ -605,6 +652,11 @@ async function main() {
             }
 
             console.log('All uploads completed successfully.');
+
+            // Apply retention policy
+            if (maxRetentionCount > 0) {
+                await applyRetentionPolicy(DRIVE, uploadFolderId, maxRetentionCount);
+            }
         }
     } catch (error) {
         actions.setFailed(`Action failed: ${error.message}`);
@@ -624,5 +676,6 @@ module.exports = {
     getUploadFolderId,
     findExistingFiles,
     getUploadParams,
+    applyRetentionPolicy,
     REPLACE_MODES // Exporting constants is often useful too
 };
