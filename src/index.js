@@ -120,6 +120,101 @@ async function withRetry(fn, operationName, maxRetries = MAX_RETRIES, baseDelay 
 }
 
 /**
+ * Validates and parses the credentials
+ * 
+ * @param {string} credentials - Base64 encoded or plain JSON credentials
+ * @returns {object} Parsed credentials object
+ * @throws {Error} If the credentials are invalid
+ */
+function parseCredentials(credentials) {
+    try {
+        // First try to parse as plain JSON
+        const parsed = JSON.parse(credentials);
+        if (parsed.client_email && parsed.private_key) {
+            return parsed;
+        }
+    } catch (error) {
+        // If JSON parse fails, it might be base64
+    }
+
+    try {
+        // Try decoding from Base64
+        const decoded = Buffer.from(credentials, 'base64').toString();
+        const parsed = JSON.parse(decoded);
+
+        if (!parsed.client_email || !parsed.private_key) {
+            throw new Error('Missing required fields in credentials');
+        }
+        return parsed;
+    } catch (error) {
+        throw new Error(`Invalid credentials format: ${error.message}`);
+    }
+}
+
+/**
+ * Grant file permissions to a list of emails
+ * 
+ * @param {object} drive - Google Drive API instance
+ * @param {string} fileId - ID of the file to share
+ * @param {string} emailList - Comma-separated list of emails
+ * @returns {Promise<void>}
+ */
+async function grantPermissions(drive, fileId, emailList) {
+    if (!emailList || typeof emailList !== 'string') {
+        return;
+    }
+
+    const emails = emailList.split(',').map(e => e.trim()).filter(e => e.length > 0);
+
+    if (emails.length === 0) {
+        return;
+    }
+
+    console.log(`Sharing file ${fileId} with ${emails.length} users...`);
+
+    for (const email of emails) {
+        try {
+            await drive.permissions.create({
+                fileId,
+                requestBody: {
+                    role: 'reader',
+                    type: 'user',
+                    emailAddress: email
+                },
+                supportsAllDrives: true,
+                // Avoid spamming notifications if possible, or make optional? strict to user request for now.
+                sendNotificationEmail: false
+            });
+            console.log(`Granted 'reader' access to ${email}`);
+        } catch (error) {
+            console.error(`Failed to share with ${email}: ${error.message}`);
+            actions.warning(`Failed to share with ${email}: ${error.message}`);
+        }
+    }
+}
+
+/**
+ * Generate description with GitHub context
+ * 
+ * @returns {string}
+ */
+function getMetadataDescription() {
+    const repo = process.env.GITHUB_REPOSITORY || 'unknown';
+    const sha = process.env.GITHUB_SHA || 'unknown';
+    const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
+    const runId = process.env.GITHUB_RUN_ID || '';
+    const ref = process.env.GITHUB_REF_NAME || 'unknown';
+
+    const runLink = runId ? `${server}/${repo}/actions/runs/${runId}` : 'N/A';
+
+    return 'Uploaded via GitHub Actions\n'
+        + `Repo: ${repo}\n`
+        + `Branch/Tag: ${ref}\n`
+        + `Commit: ${sha.substring(0, 7)}\n`
+        + `Run: ${runLink}`;
+}
+
+/**
  * Validates that the input file or pattern exists
  * 
  * @param {string} target - File path or glob pattern
@@ -134,25 +229,6 @@ function validateTarget(target) {
     const resolvedPath = path.resolve(target);
     if (!fs.existsSync(resolvedPath)) {
         throw new Error(`Target file not found: ${resolvedPath}`);
-    }
-}
-
-/**
- * Validates the credentials format
- * 
- * @param {string} credentials - Base64 encoded credentials
- * @throws {Error} If the credentials are invalid
- */
-function validateCredentials(credentials) {
-    try {
-        const decoded = Buffer.from(credentials, 'base64').toString();
-        const parsed = JSON.parse(decoded);
-
-        if (!parsed.client_email || !parsed.private_key) {
-            throw new Error('Missing required fields in credentials');
-        }
-    } catch (error) {
-        throw new Error(`Invalid credentials format: ${error.message}`);
     }
 }
 
@@ -398,22 +474,25 @@ function getUploadParams(fileMetadata, filePath, convertFiles = false, descripti
         console.log(`File size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB. Using Multipart Upload.`);
     }
 
+    // Create a copy of fileMetadata to avoid mutating the original
+    const body = { ...fileMetadata };
+
     // Handle file conversion
     if (convertFiles) {
         const ext = path.extname(filePath).toLowerCase();
         if (MIMETYPE_MAP[ext]) {
-            fileMetadata.mimeType = MIMETYPE_MAP[ext];
+            body.mimeType = MIMETYPE_MAP[ext];
             console.log(`Converting '${ext}' file to Google format: ${MIMETYPE_MAP[ext]}`);
         }
     }
 
     // Add description if provided
     if (description) {
-        fileMetadata.description = description;
+        body.description = description;
     }
 
     return {
-        requestBody: fileMetadata,
+        requestBody: body,
         media: {
             body: fs.createReadStream(filePath)
         },
@@ -437,7 +516,16 @@ function getUploadParams(fileMetadata, filePath, convertFiles = false, descripti
  * @returns {Promise<import('googleapis').drive_v3.Schema$File>}
  *          Response from the google drive files create api
  */
-async function uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles = false, shareWith = '', description = '') {
+async function uploadFile(
+    fileName,
+    filePath,
+    replaceMode,
+    override,
+    uploadFolderId,
+    convertFiles = false,
+    shareWith = '',
+    description = ''
+) {
     console.log(`Processing ${fileName} ...`);
     actions.debug(`fileName: ${fileName}`);
     actions.debug(`filePath: ${filePath}`);
@@ -573,68 +661,6 @@ async function applyRetentionPolicy(drive, folderId, maxCount) {
     }
 }
 
-/**
- * Grant file permissions to a list of emails
- * 
- * @param {object} drive - Google Drive API instance
- * @param {string} fileId - ID of the file to share
- * @param {string} emailList - Comma-separated list of emails
- * @returns {Promise<void>}
- */
-async function grantPermissions(drive, fileId, emailList) {
-    if (!emailList || typeof emailList !== 'string') {
-        return;
-    }
-
-    const emails = emailList.split(',').map(e => e.trim()).filter(e => e.length > 0);
-
-    if (emails.length === 0) {
-        return;
-    }
-
-    console.log(`Sharing file ${fileId} with ${emails.length} users...`);
-
-    for (const email of emails) {
-        try {
-            await drive.permissions.create({
-                fileId,
-                requestBody: {
-                    role: 'reader',
-                    type: 'user',
-                    emailAddress: email
-                },
-                supportsAllDrives: true,
-                sendNotificationEmail: false // Avoid spamming notifications if possible, or make optional? strict to user request for now.
-            });
-            console.log(`Granted 'reader' access to ${email}`);
-        } catch (error) {
-            console.error(`Failed to share with ${email}: ${error.message}`);
-            actions.warning(`Failed to share with ${email}: ${error.message}`);
-        }
-    }
-}
-
-/**
- * Generate description with GitHub context
- * 
- * @returns {string}
- */
-function getMetadataDescription() {
-    const repo = process.env.GITHUB_REPOSITORY || 'unknown';
-    const sha = process.env.GITHUB_SHA || 'unknown';
-    const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
-    const runId = process.env.GITHUB_RUN_ID || '';
-    const ref = process.env.GITHUB_REF_NAME || 'unknown';
-
-    const runLink = runId ? `${server}/${repo}/actions/runs/${runId}` : 'N/A';
-
-    return `Uploaded via GitHub Actions\n` +
-        `Repo: ${repo}\n` +
-        `Branch/Tag: ${ref}\n` +
-        `Commit: ${sha.substring(0, 7)}\n` +
-        `Run: ${runLink}`;
-}
-
 async function main() {
     try {
         // Get configuration input
@@ -659,23 +685,12 @@ async function main() {
 
         // Validate inputs
         validateTarget(target);
-        validateCredentials(credentials);
         replaceMode = validateReplaceMode(replaceMode);
-
-        // Log all inputs for debugging
-        console.log('Input parameters:');
-        console.log(`- target: ${target}`);
-        console.log(`- parent_folder_id: ${parentFolderId}`);
-        console.log(`- child_folder: ${childFolder || '(not set)'}`);
-        console.log(`- name: ${filename || '(not set)'}`);
-        console.log(`- override: ${override}`);
-        console.log(`- replace_mode: ${replaceMode}`);
 
         // Authenticate with Google
         console.log('Authenticating with Google Drive API...');
-        const credentialsJSON = JSON.parse(
-            Buffer.from(credentials, 'base64').toString(),
-        );
+        const credentialsJSON = parseCredentials(credentials);
+
         const scopes = [
             'https://www.googleapis.com/auth/drive',
             'https://www.googleapis.com/auth/drive.file',
@@ -729,7 +744,16 @@ async function main() {
 
                 if (!fs.lstatSync(filePath).isDirectory()) {
                     try {
-                        const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles, shareWith, description);
+                        const result = await uploadFile(
+                            fileName,
+                            filePath,
+                            replaceMode,
+                            override,
+                            uploadFolderId,
+                            convertFiles,
+                            shareWith,
+                            description
+                        );
                         uploadCount++;
                         uploadedFiles.push(result);
                     } catch (error) {
@@ -749,7 +773,16 @@ async function main() {
                 throw new Error(`Target is a directory: ${filePath}. Please specify a file or use a glob pattern.`);
             }
 
-            const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles, shareWith, description);
+            const result = await uploadFile(
+                fileName,
+                filePath,
+                replaceMode,
+                override,
+                uploadFolderId,
+                convertFiles,
+                shareWith,
+                description
+            );
             uploadCount++;
             uploadedFiles.push(result);
         }
@@ -804,5 +837,6 @@ module.exports = {
     getUploadParams,
     applyRetentionPolicy,
     grantPermissions, // Export for testing
+    parseCredentials,
     REPLACE_MODES // Exporting constants is often useful too
 };

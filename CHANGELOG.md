@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.2] - 2025-12-16
+
+## [v2.4.0] - 2025-12-17
+### Added
+- **Smart Credentials**: Support for plain JSON service account keys (Base64 no longer required).
+- **Auto-Sharing**: New `share_with` input to immediately grant read access to specific emails.
+- **Conversion**: New `convert_files` input to automatically convert CSV/Excel/Markdown to Google formats.
+- **Retention Policy**: New `max_retention_count` input to automatically delete older files.
+- **Metadata**: New `set_metadata` input to inject GitHub context (commit, branch, run ID) into file descriptions.
+- **Resumable Uploads**: Automatically switches to resumable upload for files > 5MB.
+
+### Changed
+- Refactored `src/index.js` for better testability.
+- **Documentation**: Completely reorganized README.md into "Basic" and "Advanced" sections for easier usage.
+
+## [v2.3.2] - 2025-12-17
 
 ### Added
 - Added `npm test` script and unit tests for utility functions

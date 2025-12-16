@@ -7,6 +7,7 @@ const {
     getUploadParams,
     applyRetentionPolicy,
     grantPermissions,
+    parseCredentials,
     REPLACE_MODES
 } = require('../src/index.js');
 
@@ -258,6 +259,26 @@ describe('Unit Tests', () => {
             expect(mockDrive.permissions.create).toHaveBeenCalledWith(expect.objectContaining({
                 requestBody: expect.objectContaining({ emailAddress: 'a@test.com' })
             }));
+        });
+    });
+
+    describe('parseCredentials', () => {
+        const validCreds = { client_email: 'foo', private_key: 'bar' };
+        const jsonString = JSON.stringify(validCreds);
+        const base64String = Buffer.from(jsonString).toString('base64');
+
+        test('should parse plain JSON', () => {
+            const result = parseCredentials(jsonString);
+            expect(result).toEqual(validCreds);
+        });
+
+        test('should parse base64 encoded JSON', () => {
+            const result = parseCredentials(base64String);
+            expect(result).toEqual(validCreds);
+        });
+
+        test('should throw on invalid format', () => {
+            expect(() => parseCredentials('invalid-junk')).toThrow('Invalid credentials format');
         });
     });
 });

@@ -25,7 +25,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload Artifacts TO Google Drive
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.2
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.0
       with:
         target: <LOCAL_PATH_TO_YOUR_FILE>
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -56,24 +56,11 @@ Before using this action, you need to set up the Google Drive API:
 3. Enable the Google Drive API
 4. Create a service account
 5. Create a key for the service account (JSON format)
-6. Base64 encode the JSON key file:
+6. **Copy the content of the JSON key file.**
    
-   **Windows (PowerShell):**
-   ```powershell
-   [Convert]::ToBase64String([System.IO.File]::ReadAllBytes("path\to\your-key-file.json"))
-   ```
-   
-   **macOS:**
-   ```bash
-   base64 --input ~/Downloads/your-key-file.json
-   ```
-   
-   **Linux:**
-   ```bash
-   base64 path/to/your-key-file.json
-   ```
+   *(Note: You can paste the plain JSON text directly. For backward compatibility, Base64 encoded strings are also supported but no longer required.)*
 
-7. Store the encoded key in a GitHub Secret
+7. Store the JSON content in a GitHub Secret (e.g., `GDRIVE_CREDENTIALS`).
 8. Create a folder in Google Drive where you want to upload artifacts, then set the share permission to "Editor" so the Github Action can upload the files to this folder using service account.
 9. Copy the ID of your Google Drive folder from the browser URL. When you're viewing your folder in Google Drive, the folder ID is the long string of characters that appears after 'folders/' in the URL. For example, in the URL 'https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUvWxYz12345', the folder ID is '1AbCdEfGhIjKlMnOpQrStUvWxYz12345'. You'll need this ID for the parent_folder_id parameter in your GitHub workflow.
 
@@ -107,7 +94,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload Multiple Files TO Google Drive
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.2
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.0
       with:
         target: "dist/*.zip"
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -120,7 +107,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload to Nested Folder with Custom Name
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.2
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.0
       with:
         target: build/app.jar
         name: application-${{ github.sha }}.jar
@@ -135,7 +122,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload with Override
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.2
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.0
       with:
         target: build/latest.zip
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -149,7 +136,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload with Custom Ownership
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.2
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.0
       with:
         target: build/report.pdf
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -163,7 +150,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload with Update-in-Place Strategy
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.2
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.0
       with:
         target: build/latest.zip
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -173,20 +160,32 @@ steps:
 
 ## ⚙️ Input Parameters
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `target` | Yes | Local path to the file to upload, can be relative from github runner current directory. You can also specify a glob pattern to upload multiple files at once (this will cause the name property to be ignored). |
-| `credentials` | Yes | A service account public/private key pair encoded in base64. |
-| `parent_folder_id` | Yes | The id of the drive folder where you want to upload your file. It is the string of characters after the last `/` when browsing to your folder URL. You must share the folder with the service account (using its email address) unless you specify a `owner`. |
-| `name` | No | The name of the file to be uploaded. Set to the `target` filename if not specified. (Ignored if target contains a glob `*` or `**`) |
-| `child_folder` | No | A sub-folder where to upload your file. It will be created if non-existent and must remain unique. |
-| `owner` | No | The email address of a user account that has access to the drive folder and will get the ownership of the file after its creation. To use this feature you must grant your service account a [domain-wide delegation of authority](https://developers.google.com/admin-sdk/directory/v1/guides/delegation) beforehand. |
-| `override` | No | If set true, delete files with the same name before uploading. |
-| `replace_mode` | No | Determines how to handle existing files with the same name. Options: `delete_first`, `update_in_place`, or `add_new` (default) |
-| `max_retention_count` | No | Number of most recent files to keep in the parent folder. Older files will be deleted. Set to `0` to disable (default). |
-| `convert_files` | No | If set to `true`, the action automatically converts supported files (e.g., `.csv`, `.md`, `.xlsx`) into their native editable Google formats (Sheets, Docs, etc.). Default is `false`. |
-| `share_with` | No | Comma-separated list of email addresses. The action will grant them "reader" permission to the uploaded file immediately. |
-| `set_metadata` | No | If true, adds GitHub context (Repo, Branch, Commit, Run Link) to the file description in Google Drive. Default is `false`. |
+### 🟢 Basic Configuration (Required)
+
+| Input | Description |
+|---|---|
+| `target` | **Required**. The file(s) you want to upload. Supports glob patterns (e.g., `dist/*.apk`). |
+| `credentials` | **Required**. Your Google Service Account JSON. (Paste the **plain JSON** content directly, or Base64 encoded string). |
+| `parent_folder_id` | **Required**. The ID of the Google Drive folder where you want to upload. |
+
+### 🟠 Advanced Configuration (Optional)
+
+<details>
+<summary>Click to expand advanced options</summary>
+
+| Input | Description |
+|---|---|
+| `child_folder` | Optional. Name of a subfolder to create/use inside the parent folder. |
+| `name` | Optional. Rename the file after upload (only works for single file uploads). |
+| `override` | **Legacy**. If `true`, deletes existing files with the same name before upload. (Use `replace_mode` instead). |
+| `replace_mode` | Determines how to handle existing files. Options: `delete_first`, `update_in_place`, or `add_new` (default). |
+| `max_retention_count` | Number of most recent files to keep in the parent folder. Older files will be deleted. Set to `0` to disable (default). |
+| `convert_files` | If `true`, automatically converts supported files (`.csv`, `.md`, etc.) to Google Docs/Sheets. Default `false`. |
+| `share_with` | Comma-separated list of emails to grant "reader" access immediately after upload. |
+| `set_metadata` | If `true`, adds GitHub context (Repo, Commit, Run Link) to the file description. Default `false`. |
+| `owner` | Optional. Email of the user to impersonate (requires Domain-Wide Delegation). |
+
+</details>
 
 ## 📤 Output Parameters
 
@@ -209,7 +208,7 @@ The action provides the following outputs that can be used in subsequent steps:
 ```yaml
 - name: Upload to Google Drive
   id: upload
-  uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.2
+  uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.0
   with:
     credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
     parent_folder_id: ${{ secrets.GOOGLE_PARENT_FOLDER_ID }}
@@ -227,7 +226,7 @@ The action provides the following outputs that can be used in subsequent steps:
 ### Common Issues
 
 1. **Authentication Errors**
-   - Ensure your credentials are correctly base64 encoded
+   - Ensure your credentials are valid JSON (copy-pasted from the key file) or Base64 encoded
    - Check that the service account has access to the specified folder
 
 2. **File Not Found**
@@ -251,7 +250,7 @@ This project uses automated workflows to simplify the release process:
 2. **Creating a Release**:
    - Update the version in `package.json` and `CHANGELOG.md`
    - Merge changes to the master branch
-   - Create and push a new tag: `git tag v2.3.2 && git push origin v2.3.2`
+   - Create and push a new tag: `git tag v2.4.0 && git push origin v2.4.0`
    - The release workflow will automatically create a GitHub release
 
 ## 🔒 Security
