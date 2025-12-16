@@ -82,13 +82,13 @@ function sleep(ms) {
  */
 async function withRetry(fn, operationName, maxRetries = MAX_RETRIES, baseDelay = BASE_RETRY_DELAY) {
     let lastError;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await fn();
         } catch (error) {
             lastError = error;
-            
+
             if (attempt < maxRetries) {
                 const delay = baseDelay * Math.pow(2, attempt - 1);
                 console.log(`${operationName} failed (attempt ${attempt}/${maxRetries}). Retrying in ${delay}ms...`);
@@ -97,7 +97,7 @@ async function withRetry(fn, operationName, maxRetries = MAX_RETRIES, baseDelay 
             }
         }
     }
-    
+
     throw new Error(`${operationName} failed after ${maxRetries} attempts: ${lastError.message}`);
 }
 
@@ -112,7 +112,7 @@ function validateTarget(target) {
         // For glob patterns, we'll check if any files match during processing
         return;
     }
-    
+
     const resolvedPath = path.resolve(target);
     if (!fs.existsSync(resolvedPath)) {
         throw new Error(`Target file not found: ${resolvedPath}`);
@@ -129,7 +129,7 @@ function validateCredentials(credentials) {
     try {
         const decoded = Buffer.from(credentials, 'base64').toString();
         const parsed = JSON.parse(decoded);
-        
+
         if (!parsed.client_email || !parsed.private_key) {
             throw new Error('Missing required fields in credentials');
         }
@@ -244,11 +244,11 @@ async function getUploadFolderId(parentFolderId, childFolderPath) {
 function validateReplaceMode(replaceMode) {
     const mode = replaceMode.toLowerCase();
     const validModes = Object.values(REPLACE_MODES);
-    
+
     if (!validModes.includes(mode)) {
         throw new Error(`Invalid replace_mode: ${replaceMode}. Valid options are: ${validModes.join(', ')}`);
     }
-    
+
     return mode;
 }
 
@@ -270,10 +270,10 @@ async function findExistingFiles(fileName, uploadFolderId) {
     };
 
     const { data: { files } } = await withRetry(
-        listFilesOperation, 
+        listFilesOperation,
         `List files in folder ${uploadFolderId} with name ${fileName}`
     );
-    
+
     return files;
 }
 
@@ -289,7 +289,7 @@ async function deleteFile(fileId, fileName) {
     actions.debug(`Removing ${fileName}(${fileId})`);
 
     const deleteFileOperation = async () => {
-        return DRIVE.files.delete({ 
+        return DRIVE.files.delete({
             fileId,
             supportsAllDrives: true,
         });
@@ -326,11 +326,11 @@ async function updateFile(fileId, fileName, filePath) {
 
     const result = await withRetry(updateFileOperation, `Update file ${fileName}`);
     console.log(`File '${fileName}' updated successfully. ID: ${result.data.id}`);
-    
+
     if (result.data.webViewLink) {
         console.log(`View file: ${result.data.webViewLink}`);
     }
-    
+
     return result.data;
 }
 
@@ -372,7 +372,7 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
 
     // Find existing files with the same name
     const existingFiles = await findExistingFiles(fileName, uploadFolderId);
-    
+
     // Handle existing files based on replace mode
     if (existingFiles.length > 0) {
         if (effectiveReplaceMode === REPLACE_MODES.DELETE_FIRST) {
@@ -386,14 +386,14 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
                 console.log(`Warning: Multiple files with name '${fileName}' found. Updating the first one.`);
             }
             const updatedFile = await updateFile(existingFiles[0].id, fileName, filePath);
-            
+
             // Set outputs
             actions.setOutput('file_id', updatedFile.id);
             actions.setOutput('file_name', updatedFile.name);
             if (updatedFile.webViewLink) {
                 actions.setOutput('web_view_link', updatedFile.webViewLink);
             }
-            
+
             return updatedFile;
         }
         // For ADD_NEW mode, we just proceed with creating a new file
@@ -424,18 +424,18 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
 
     const result = await withRetry(createFileOperation, `Upload file ${fileName}`);
     console.log(`File '${fileName}' uploaded successfully. ID: ${result.data.id}`);
-    
+
     if (result.data.webViewLink) {
         console.log(`View file: ${result.data.webViewLink}`);
     }
-    
+
     // Set outputs
     actions.setOutput('file_id', result.data.id);
     actions.setOutput('file_name', result.data.name);
     if (result.data.webViewLink) {
         actions.setOutput('web_view_link', result.data.webViewLink);
     }
-    
+
     return result.data;
 }
 
@@ -450,12 +450,12 @@ async function main() {
         const override = getBooleanInputAndDebug('override', { required: false });
         const filename = getInputAndDebug('name', { required: false });
         let replaceMode = getInputAndDebug('replace_mode', { required: false }) || REPLACE_MODES.ADD_NEW;
-        
+
         // Validate inputs
         validateTarget(target);
         validateCredentials(credentials);
         replaceMode = validateReplaceMode(replaceMode);
-        
+
         // Log all inputs for debugging
         console.log('Input parameters:');
         console.log(`- target: ${target}`);
@@ -464,7 +464,7 @@ async function main() {
         console.log(`- name: ${filename || '(not set)'}`);
         console.log(`- override: ${override}`);
         console.log(`- replace_mode: ${replaceMode}`);
-        
+
         // Authenticate with Google
         console.log('Authenticating with Google Drive API...');
         const credentialsJSON = JSON.parse(
@@ -549,12 +549,12 @@ async function main() {
         }
 
         console.log(`Upload summary: ${uploadCount} files uploaded successfully, ${errorCount} failures.`);
-        
+
         if (errorCount > 0) {
             actions.setFailed(`${errorCount} file(s) failed to upload.`);
         } else {
             actions.setOutput('upload_count', uploadCount.toString());
-            
+
             // Set outputs for multiple files
             if (uploadedFiles.length > 0) {
                 const fileIds = uploadedFiles.map(file => file.id).join(',');
@@ -563,14 +563,14 @@ async function main() {
                     .filter(file => file.webViewLink)
                     .map(file => file.webViewLink)
                     .join(',');
-                
+
                 actions.setOutput('file_ids', fileIds);
                 actions.setOutput('file_names', fileNames);
                 if (webViewLinks) {
                     actions.setOutput('web_view_links', webViewLinks);
                 }
             }
-            
+
             console.log('All uploads completed successfully.');
         }
     } catch (error) {
@@ -578,4 +578,17 @@ async function main() {
     }
 }
 
-main();
+if (require.main === module) {
+    main();
+}
+
+module.exports = {
+    splitFolder,
+    validateTarget,
+    validateReplaceMode,
+    getInputAndDebug,
+    getBooleanInputAndDebug,
+    getUploadFolderId,
+    findExistingFiles,
+    REPLACE_MODES // Exporting constants is often useful too
+};
