@@ -40,6 +40,14 @@ inputs:
     required: false
     default: false
     type: boolean
+  share_with:
+    description: 'Optional, comma-separated list of email addresses to grant "reader" permission to the uploaded file.'
+    required: false
+  set_metadata:
+    description: 'Optional, if true, adds GitHub context (repo, commit, run link) to the file description.'
+    required: false
+    default: false
+    type: boolean
 runs:
   using: 'node20'
   main: 'dist/index.js'

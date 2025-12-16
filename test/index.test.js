@@ -6,6 +6,7 @@ const {
     validateReplaceMode,
     getUploadParams,
     applyRetentionPolicy,
+    grantPermissions,
     REPLACE_MODES
 } = require('../src/index.js');
 
@@ -210,6 +211,53 @@ describe('Unit Tests', () => {
             expect(mockDrive.files.delete).toHaveBeenCalledTimes(2);
             expect(mockDrive.files.delete).toHaveBeenCalledWith({ fileId: 'mid', supportsAllDrives: true });
             expect(mockDrive.files.delete).toHaveBeenCalledWith({ fileId: 'old', supportsAllDrives: true });
+        });
+    });
+
+    describe('grantPermissions', () => {
+        const mockDrive = {
+            permissions: {
+                create: jest.fn()
+            }
+        };
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
+
+        test('should do nothing if email list is empty', async () => {
+            await grantPermissions(mockDrive, 'file-123', '');
+            expect(mockDrive.permissions.create).not.toHaveBeenCalled();
+        });
+
+        test('should grant permission to single email', async () => {
+            await grantPermissions(mockDrive, 'file-123', 'test@example.com');
+            expect(mockDrive.permissions.create).toHaveBeenCalledTimes(1);
+            expect(mockDrive.permissions.create).toHaveBeenCalledWith(expect.objectContaining({
+                fileId: 'file-123',
+                requestBody: expect.objectContaining({
+                    role: 'reader',
+                    emailAddress: 'test@example.com'
+                })
+            }));
+        });
+
+        test('should grant permission to multiple emails', async () => {
+            await grantPermissions(mockDrive, 'file-123', 'a@test.com, b@test.com');
+            expect(mockDrive.permissions.create).toHaveBeenCalledTimes(2);
+            expect(mockDrive.permissions.create).toHaveBeenCalledWith(expect.objectContaining({
+                requestBody: expect.objectContaining({ emailAddress: 'a@test.com' })
+            }));
+            expect(mockDrive.permissions.create).toHaveBeenCalledWith(expect.objectContaining({
+                requestBody: expect.objectContaining({ emailAddress: 'b@test.com' })
+            }));
+        });
+
+        test('should handle trimmed emails', async () => {
+            await grantPermissions(mockDrive, 'file-123', ' a@test.com , b@test.com ');
+            expect(mockDrive.permissions.create).toHaveBeenCalledWith(expect.objectContaining({
+                requestBody: expect.objectContaining({ emailAddress: 'a@test.com' })
+            }));
         });
     });
 });

@@ -324,9 +324,11 @@ async function deleteFile(drive, fileId, fileName) {
  * @param {string} fileId - ID of the file to update
  * @param {string} fileName - Name of the file
  * @param {string} filePath - Path to the new file content
+ * @param {string} shareWith - Emails to share with
+ * @param {string} description - File description
  * @returns {Promise<import('googleapis').drive_v3.Schema$File>} - Updated file data
  */
-async function updateFile(fileId, fileName, filePath) {
+async function updateFile(fileId, fileName, filePath, shareWith = '', description = '') {
     console.log(`Found existing file '${fileName}'. Updating in place...`);
     actions.debug(`Updating ${fileName}(${fileId})`);
 
@@ -344,9 +346,16 @@ async function updateFile(fileId, fileName, filePath) {
         body: fs.createReadStream(filePath),
     };
 
+    // If description is provided, we need to update it as well
+    const requestBody = {};
+    if (description) {
+        requestBody.description = description;
+    }
+
     const updateFileOperation = async () => {
         return DRIVE.files.update({
             fileId,
+            requestBody: description ? requestBody : undefined,
             media: fileData,
             uploadType: isResumable ? 'resumable' : 'multipart',
             fields: 'id,name,webViewLink',
@@ -361,6 +370,10 @@ async function updateFile(fileId, fileName, filePath) {
         console.log(`View file: ${result.data.webViewLink}`);
     }
 
+    if (shareWith) {
+        await grantPermissions(DRIVE, result.data.id, shareWith);
+    }
+
     return result.data;
 }
 
@@ -370,9 +383,10 @@ async function updateFile(fileId, fileName, filePath) {
  * @param {object} fileMetadata 
  * @param {string} filePath 
  * @param {boolean} convertFiles
+ * @param {string} description
  * @returns {object}
  */
-function getUploadParams(fileMetadata, filePath, convertFiles = false) {
+function getUploadParams(fileMetadata, filePath, convertFiles = false, description = '') {
     const stats = fs.statSync(filePath);
     const fileSize = stats.size;
     // Switch to resumable upload if file size > 5MB
@@ -391,6 +405,11 @@ function getUploadParams(fileMetadata, filePath, convertFiles = false) {
             fileMetadata.mimeType = MIMETYPE_MAP[ext];
             console.log(`Converting '${ext}' file to Google format: ${MIMETYPE_MAP[ext]}`);
         }
+    }
+
+    // Add description if provided
+    if (description) {
+        fileMetadata.description = description;
     }
 
     return {
@@ -413,10 +432,12 @@ function getUploadParams(fileMetadata, filePath, convertFiles = false) {
  * @param {boolean} override Whether or not to remove and replace the current file if it exists (legacy parameter)
  * @param {string} uploadFolderId Id of the new files parent
  * @param {boolean} convertFiles Whether to convert files to Google formats
+ * @param {string} shareWith Comma-separated list of emails to share with
+ * @param {string} description content to add to file description
  * @returns {Promise<import('googleapis').drive_v3.Schema$File>}
  *          Response from the google drive files create api
  */
-async function uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles = false) {
+async function uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles = false, shareWith = '', description = '') {
     console.log(`Processing ${fileName} ...`);
     actions.debug(`fileName: ${fileName}`);
     actions.debug(`filePath: ${filePath}`);
@@ -456,7 +477,7 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
             if (existingFiles.length > 1) {
                 console.log(`Warning: Multiple files with name '${fileName}' found. Updating the first one.`);
             }
-            const updatedFile = await updateFile(existingFiles[0].id, fileName, filePath);
+            const updatedFile = await updateFile(existingFiles[0].id, fileName, filePath, shareWith, description);
 
             // Set outputs
             actions.setOutput('file_id', updatedFile.id);
@@ -479,7 +500,7 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
 
     actions.debug(`Creating ${fileMetadata.name} in ${fileMetadata.parents[0]}`);
 
-    const params = getUploadParams(fileMetadata, filePath, convertFiles);
+    const params = getUploadParams(fileMetadata, filePath, convertFiles, description);
 
     const createFileOperation = async () => {
         return DRIVE.files.create(params);
@@ -496,7 +517,12 @@ async function uploadFile(fileName, filePath, replaceMode, override, uploadFolde
     actions.setOutput('file_id', result.data.id);
     actions.setOutput('file_name', result.data.name);
     if (result.data.webViewLink) {
-        actions.setOutput('web_view_link', result.data.webViewLink);
+        actions.setOutput('web_view_links', result.data.webViewLink);
+    }
+
+    // Handle auto-sharing
+    if (shareWith) {
+        await grantPermissions(DRIVE, result.data.id, shareWith);
     }
 
     return result.data;
@@ -547,6 +573,68 @@ async function applyRetentionPolicy(drive, folderId, maxCount) {
     }
 }
 
+/**
+ * Grant file permissions to a list of emails
+ * 
+ * @param {object} drive - Google Drive API instance
+ * @param {string} fileId - ID of the file to share
+ * @param {string} emailList - Comma-separated list of emails
+ * @returns {Promise<void>}
+ */
+async function grantPermissions(drive, fileId, emailList) {
+    if (!emailList || typeof emailList !== 'string') {
+        return;
+    }
+
+    const emails = emailList.split(',').map(e => e.trim()).filter(e => e.length > 0);
+
+    if (emails.length === 0) {
+        return;
+    }
+
+    console.log(`Sharing file ${fileId} with ${emails.length} users...`);
+
+    for (const email of emails) {
+        try {
+            await drive.permissions.create({
+                fileId,
+                requestBody: {
+                    role: 'reader',
+                    type: 'user',
+                    emailAddress: email
+                },
+                supportsAllDrives: true,
+                sendNotificationEmail: false // Avoid spamming notifications if possible, or make optional? strict to user request for now.
+            });
+            console.log(`Granted 'reader' access to ${email}`);
+        } catch (error) {
+            console.error(`Failed to share with ${email}: ${error.message}`);
+            actions.warning(`Failed to share with ${email}: ${error.message}`);
+        }
+    }
+}
+
+/**
+ * Generate description with GitHub context
+ * 
+ * @returns {string}
+ */
+function getMetadataDescription() {
+    const repo = process.env.GITHUB_REPOSITORY || 'unknown';
+    const sha = process.env.GITHUB_SHA || 'unknown';
+    const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
+    const runId = process.env.GITHUB_RUN_ID || '';
+    const ref = process.env.GITHUB_REF_NAME || 'unknown';
+
+    const runLink = runId ? `${server}/${repo}/actions/runs/${runId}` : 'N/A';
+
+    return `Uploaded via GitHub Actions\n` +
+        `Repo: ${repo}\n` +
+        `Branch/Tag: ${ref}\n` +
+        `Commit: ${sha.substring(0, 7)}\n` +
+        `Run: ${runLink}`;
+}
+
 async function main() {
     try {
         // Get configuration input
@@ -560,6 +648,14 @@ async function main() {
         let replaceMode = getInputAndDebug('replace_mode', { required: false }) || REPLACE_MODES.ADD_NEW;
         const maxRetentionCount = parseInt(getInputAndDebug('max_retention_count', { required: false }) || '0', 10);
         const convertFiles = getBooleanInputAndDebug('convert_files', { required: false });
+        const shareWith = getInputAndDebug('share_with', { required: false });
+        const setMetadata = getBooleanInputAndDebug('set_metadata', { required: false });
+
+        let description = '';
+        if (setMetadata) {
+            description = getMetadataDescription();
+            console.log('Generated metadata description.');
+        }
 
         // Validate inputs
         validateTarget(target);
@@ -633,7 +729,7 @@ async function main() {
 
                 if (!fs.lstatSync(filePath).isDirectory()) {
                     try {
-                        const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles);
+                        const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles, shareWith, description);
                         uploadCount++;
                         uploadedFiles.push(result);
                     } catch (error) {
@@ -653,7 +749,7 @@ async function main() {
                 throw new Error(`Target is a directory: ${filePath}. Please specify a file or use a glob pattern.`);
             }
 
-            const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles);
+            const result = await uploadFile(fileName, filePath, replaceMode, override, uploadFolderId, convertFiles, shareWith, description);
             uploadCount++;
             uploadedFiles.push(result);
         }
@@ -707,5 +803,6 @@ module.exports = {
     findExistingFiles,
     getUploadParams,
     applyRetentionPolicy,
+    grantPermissions, // Export for testing
     REPLACE_MODES // Exporting constants is often useful too
 };
