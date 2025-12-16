@@ -74,6 +74,26 @@ Before using this action, you need to set up the Google Drive API:
 
 For a visual guide, please refer to our [video tutorial](https://drive.google.com/file/d/1GsKSFmh5IpujFuOaKKsOYKvar-tf5etY/view?usp=sharing).
 
+## ⚠️ Troubleshooting: Storage Quota Errors
+
+**If** you encounter an error like `The user's Drive storage quota has been exceeded`, it is likely because Service Accounts have **0 GB** storage by default.
+
+**Solution (For Google Workspace Users):**
+1.  **Create a Shared Drive.**
+2.  **Add the Service Account** as a **"Content Manager"**.
+3.  **Use the Folder ID** from that Shared Drive in your workflow.
+
+*This bypasses the individual quota limits.*
+
+<details>
+<summary><b>Advanced: Uploading to "My Drive" (Requires Admin Setup)</b></summary>
+
+If you absolutely must upload to a personal user's drive and cannot use Shared Drives, you must use **Domain-Wide Delegation**.
+1. Enable Domain-Wide Delegation for the Service Account in Google Cloud Console.
+2. In Google Admin Console, authorize the Service Account's Client ID with `https://www.googleapis.com/auth/drive` scope.
+3. In your Github Action, use the `owner` input to specify the personal email address to impersonate.
+</details>
+
 ## 📋 Usage Examples
 
 ### Upload multiple files using glob pattern:
