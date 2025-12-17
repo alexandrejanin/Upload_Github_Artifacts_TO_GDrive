@@ -703,17 +703,13 @@ async function main() {
         }
 
         const privateKey = credentialsJSON.private_key.replace(/\\n/g, '\n');
-        console.log(`Parsed client_email: ${credentialsJSON.client_email}`);
-        console.log(`Parsed private_key length: ${privateKey.length}`);
-        console.log(`Private Key sub: ${privateKey.substring(0, 30)}...`);
 
-        const auth = new google.auth.JWT(
-            credentialsJSON.client_email,
-            undefined,
-            privateKey,
+        const auth = new google.auth.JWT({
+            email: credentialsJSON.client_email,
+            key: privateKey,
             scopes,
-            owner || undefined,
-        );
+            subject: owner || undefined,
+        });
 
         // Explicitly authorize to check for credential issues strictly
         await auth.authorize();
