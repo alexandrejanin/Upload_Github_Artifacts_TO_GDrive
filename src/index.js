@@ -702,13 +702,15 @@ async function main() {
             throw new Error('Credential parsing success but private_key is missing/empty');
         }
 
+        const privateKey = credentialsJSON.private_key.replace(/\\n/g, '\n');
         console.log(`Parsed client_email: ${credentialsJSON.client_email}`);
-        console.log(`Parsed private_key length: ${credentialsJSON.private_key.length}`);
+        console.log(`Parsed private_key length: ${privateKey.length}`);
+        console.log(`Private Key sub: ${privateKey.substring(0, 30)}...`);
 
         const auth = new google.auth.JWT(
             credentialsJSON.client_email,
-            null,
-            credentialsJSON.private_key.replace(/\\n/g, '\n'),
+            undefined,
+            privateKey,
             scopes,
             owner || undefined,
         );
