@@ -617,47 +617,49 @@ async function uploadFile(
 }
 
 /**
- * Apply retention policy to keep only the most recent files
- * 
+/**
+ * Apply retention policy to keep only the most recent files with the same name
+ *
  * @param {object} drive - Google Drive API instance
  * @param {string} folderId - ID of the folder to clean
+ * @param {string} fileName - Name of the file to check retention for
  * @param {number} maxCount - Maximum number of files to keep (0 to disable)
  * @returns {Promise<void>}
  */
-async function applyRetentionPolicy(drive, folderId, maxCount) {
+async function applyRetentionPolicy(drive, folderId, fileName, maxCount) {
     if (maxCount <= 0) {
         return;
     }
 
-    console.log(`Applying retention policy: ensuring max ${maxCount} files in folder...`);
+    console.log(`Applying retention policy for '${fileName}': ensuring max ${maxCount} versions...`);
 
     const listFilesOperation = async () => {
         return drive.files.list({
-            q: `'${folderId}' in parents and trashed=false`,
+            q: `'${folderId}' in parents and name = '${fileName}' and trashed=false`, // Scope to specific file name
             orderBy: 'createdTime desc',
             fields: 'files(id, name, createdTime)',
             supportsAllDrives: true,
             includeItemsFromAllDrives: true,
-            pageSize: 1000 // Ensure we get enough files to check retention
+            pageSize: 100 // Should be enough for versions
         });
     };
 
-    const { data: { files } } = await withRetry(listFilesOperation, `List files for retention in ${folderId}`);
+    const { data: { files } } = await withRetry(listFilesOperation, `List versions of ${fileName} in ${folderId}`);
 
     if (files.length > maxCount) {
         const filesToDelete = files.slice(maxCount);
-        console.log(`Found ${files.length} files. Deleting ${filesToDelete.length} old files...`);
+        console.log(`Found ${files.length} versions of '${fileName}'. Deleting ${filesToDelete.length} old versions...`);
 
         for (const file of filesToDelete) {
             try {
                 await deleteFile(drive, file.id, file.name);
             } catch (error) {
-                console.error(`Failed to delete old file ${file.name}: ${error.message}`);
+                console.error(`Failed to delete old version ${file.name} (${file.id}): ${error.message}`);
                 // Continue deleting others even if one fails
             }
         }
     } else {
-        console.log(`Found ${files.length} files. No deletion needed.`);
+        console.log(`Found ${files.length} versions of '${fileName}'. No deletion needed.`);
     }
 }
 
@@ -767,6 +769,11 @@ async function main() {
                         );
                         uploadCount++;
                         uploadedFiles.push(result);
+
+                        // Apply retention policy immediately for this file
+                        if (maxRetentionCount > 0) {
+                            await applyRetentionPolicy(DRIVE, uploadFolderId, fileName, maxRetentionCount);
+                        }
                     } catch (error) {
                         console.error(`Error uploading ${fileName}: ${error.message}`);
                         actions.error(`Failed to upload ${fileName}: ${error.message}`);
@@ -796,6 +803,11 @@ async function main() {
             );
             uploadCount++;
             uploadedFiles.push(result);
+
+            // Apply retention policy immediately for this file
+            if (maxRetentionCount > 0) {
+                await applyRetentionPolicy(DRIVE, uploadFolderId, fileName, maxRetentionCount);
+            }
         }
 
         console.log(`Upload summary: ${uploadCount} files uploaded successfully, ${errorCount} failures.`);
@@ -822,11 +834,6 @@ async function main() {
             }
 
             console.log('All uploads completed successfully.');
-
-            // Apply retention policy
-            if (maxRetentionCount > 0) {
-                await applyRetentionPolicy(DRIVE, uploadFolderId, maxRetentionCount);
-            }
         }
     } catch (error) {
         actions.setFailed(`Action failed: ${error.message}`);

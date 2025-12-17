@@ -32,7 +32,7 @@ inputs:
     required: false
     default: 'add_new'
   max_retention_count:
-    description: 'Optional, number of most recent files to keep in the folder. Older files will be deleted. Set to 0 to disable (default).'
+    description: 'Optional, number of most recent files with the same name to keep. Older versions of the specific file will be deleted from the folder. Set to 0 to disable (default).'
     required: false
     default: 0
   convert_files:

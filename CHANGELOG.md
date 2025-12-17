@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Authentication**: Fixed "Request is missing required authentication credential" error by sanitizing private key newlines and correctly handling the optional owner parameter.
 - **Release**: Ensured `dist/index.js` is correctly updated with the latest fixes.
+- **Retention Policy**: Updated `max_retention_count` to use safe, "Version History" logic. It now keeps the N most recent files with the *same name* instead of deleting unrelated files in the folder.
 
 ## [2.4.0] - 2025-12-17
 ### Added

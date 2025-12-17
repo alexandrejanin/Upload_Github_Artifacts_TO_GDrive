@@ -163,6 +163,7 @@ describe('Unit Tests', () => {
 
     describe('applyRetentionPolicy', () => {
         const mockFolderId = 'folder-123';
+        const mockFileName = 'test-file.zip'; // New: file name for per-file retention
         const mockDrive = {
             files: {
                 list: jest.fn(),
@@ -175,7 +176,7 @@ describe('Unit Tests', () => {
         });
 
         test('should do nothing if maxCount is 0', async () => {
-            await applyRetentionPolicy(mockDrive, mockFolderId, 0);
+            await applyRetentionPolicy(mockDrive, mockFolderId, mockFileName, 0);
             expect(mockDrive.files.list).not.toHaveBeenCalled();
         });
 
@@ -184,18 +185,18 @@ describe('Unit Tests', () => {
                 data: { files: [{ id: '1' }, { id: '2' }] }
             });
 
-            await applyRetentionPolicy(mockDrive, mockFolderId, 5);
+            await applyRetentionPolicy(mockDrive, mockFolderId, mockFileName, 5);
 
             expect(mockDrive.files.list).toHaveBeenCalled();
+            // Verify strict name filtering
+            expect(mockDrive.files.list).toHaveBeenCalledWith(expect.objectContaining({
+                q: expect.stringContaining(`name = '${mockFileName}'`)
+            }));
             expect(mockDrive.files.delete).not.toHaveBeenCalled();
         });
 
         test('should delete excess files', async () => {
             // Return 3 files, keep 1. Should delete 2 (the oldest ones/last ones in sorted list)
-            // Note: The code sorts by createdTime desc (newest first).
-            // So if we have [newest, middle, oldest], and max=1, we keep newest.
-            // We delete middle and oldest.
-
             const files = [
                 { id: 'new', name: 'new.zip' },
                 { id: 'mid', name: 'mid.zip' },
@@ -207,7 +208,7 @@ describe('Unit Tests', () => {
             });
             mockDrive.files.delete.mockResolvedValue({});
 
-            await applyRetentionPolicy(mockDrive, mockFolderId, 1);
+            await applyRetentionPolicy(mockDrive, mockFolderId, mockFileName, 1);
 
             expect(mockDrive.files.delete).toHaveBeenCalledTimes(2);
             expect(mockDrive.files.delete).toHaveBeenCalledWith({ fileId: 'mid', supportsAllDrives: true });
