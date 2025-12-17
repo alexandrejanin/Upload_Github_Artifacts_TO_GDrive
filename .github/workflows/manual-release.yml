@@ -51,4 +51,31 @@ jobs:
           git tag ${{ inputs.version }}
           git push origin ${{ inputs.version }}
           
-          echo "✅ Tag ${{ inputs.version }} push complete. This will trigger the 'Create Release' workflow."
+          echo "✅ Tag ${{ inputs.version }} push complete."
+
+      - name: Get version without v
+        id: get_version
+        run: echo "VERSION=${{ inputs.version }}" | sed 's/v//' >> $GITHUB_OUTPUT
+
+      - name: Get Changelog Entry
+        id: changelog_reader
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.get_version.outputs.VERSION }}
+          path: ./CHANGELOG.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ inputs.version }}
+          tag_name: ${{ inputs.version }}
+          body: ${{ steps.changelog_reader.outputs.changes }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/**/*
+            LICENSE
+            README.md
+            action.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
