@@ -4,7 +4,25 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.node-version'
+      - '.eslintrc.js'
+      - '.github/**'
+      - 'action.yml'
+      - 'dist/**'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.node-version'
+      - '.eslintrc.js'
+      - '.github/**'
+      - 'action.yml'
+      - 'dist/**'
 
 jobs:
   lint:
