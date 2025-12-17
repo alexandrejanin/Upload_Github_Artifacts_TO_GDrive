@@ -79,5 +79,21 @@ jobs:
           git commit -m "chore: Update dist files from CI build [skip ci]"
           git push
           
+          # Check if the original commit message starts with "release: v"
+          # The triggering workflow_run event has the commit message in github.event.workflow_run.head_commit.message
+          COMMIT_MSG="${{ github.event.workflow_run.head_commit.message }}"
+          
+          if [[ $COMMIT_MSG == release:\ v* ]]; then
+            VERSION=$(echo "$COMMIT_MSG" | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+')
+            if [ ! -z "$VERSION" ]; then
+              echo "Detected release commit for version $VERSION. Creating tag..."
+              git tag $VERSION
+              git push origin $VERSION
+              echo "Tag $VERSION pushed successfully."
+            else
+              echo "Could not parse version from commit message: $COMMIT_MSG"
+            fi
+          fi
+          
           echo "Dist files updated successfully"
 

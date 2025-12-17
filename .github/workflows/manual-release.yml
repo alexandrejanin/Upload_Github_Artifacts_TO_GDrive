@@ -1,0 +1,54 @@
+name: Manual Release Prep
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. v2.4.1)'
+        required: true
+        type: string
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version: '22.x'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Rebuild Dist
+        run: yarn build
+
+      - name: Commit Dist and Tag
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+          # Force update dist in case it changed
+          git add dist/
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "Dist is already up to date."
+          else
+            git commit -m "chore: Update dist for release ${{ inputs.version }} [skip ci]"
+            git push origin master
+          fi
+
+          # Create and Push Tag
+          git tag ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
+          
+          echo "✅ Tag ${{ inputs.version }} push complete. This will trigger the 'Create Release' workflow."
