@@ -43,6 +43,11 @@ inputs:
   share_with:
     description: 'Optional, comma-separated list of email addresses to grant "reader" permission to the uploaded file.'
     required: false
+  send_share_notification:
+    description: 'Optional, if true, sends an email notification to the users specified in share_with. Default false.'
+    required: false
+    default: false
+    type: boolean
   set_metadata:
     description: 'Optional, if true, adds GitHub context (repo, commit, run link) to the file description.'
     required: false

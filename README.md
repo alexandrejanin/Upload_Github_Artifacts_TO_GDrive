@@ -158,6 +158,21 @@ steps:
         replace_mode: update_in_place
 ```
 
+### Upload and Share with Notification:
+```yaml
+steps:
+    - uses: actions/checkout@v4.1.1
+
+    - name: Upload and Share
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      with:
+        target: build/release.zip
+        credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
+        parent_folder_id: <YOUR_DRIVE_FOLDER_ID>
+        share_with: "user1@example.com, user2@example.com"
+        send_share_notification: true
+```
+
 ## ⚙️ Input Parameters
 
 ### 🟢 Basic Configuration (Required)
@@ -182,6 +197,7 @@ steps:
 | `max_retention_count` | Number of most recent files *with the same name* to keep. Effectively applies a "Version History" policy per file. Older versions of the specific file are deleted. Set to `0` to disable (default). |
 | `convert_files` | If `true`, automatically converts supported files (`.csv`, `.md`, etc.) to Google Docs/Sheets. Default `false`. |
 | `share_with` | Comma-separated list of emails to grant "reader" access immediately after upload. |
+| `send_share_notification` | If `true`, sends an email notification to the users specified in share_with. Default `false`. |
 | `set_metadata` | If `true`, adds GitHub context (Repo, Commit, Run Link) to the file description. Default `false`. |
 | `owner` | Optional. Email of the user to impersonate (requires Domain-Wide Delegation). |
 

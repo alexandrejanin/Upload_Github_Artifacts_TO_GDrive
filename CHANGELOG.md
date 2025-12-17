@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [2.4.1] - 2025-12-17
+### Added
+- **Share Notifications**: New `send_share_notification` input to opt-in for email alerts when files are shared.
+
 ### Fixed
 - **Authentication**: Fixed "Request is missing required authentication credential" error by sanitizing private key newlines and correctly handling the optional owner parameter.
 - **Release**: Ensured `dist/index.js` is correctly updated with the latest fixes.

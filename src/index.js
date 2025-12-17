@@ -153,13 +153,14 @@ function parseCredentials(credentials) {
 
 /**
  * Grant file permissions to a list of emails
- * 
+ *
  * @param {object} drive - Google Drive API instance
  * @param {string} fileId - ID of the file to share
  * @param {string} emailList - Comma-separated list of emails
+ * @param {boolean} sendNotification - Whether to send email notification
  * @returns {Promise<void>}
  */
-async function grantPermissions(drive, fileId, emailList) {
+async function grantPermissions(drive, fileId, emailList, sendNotification = false) {
     if (!emailList || typeof emailList !== 'string') {
         return;
     }
@@ -170,7 +171,7 @@ async function grantPermissions(drive, fileId, emailList) {
         return;
     }
 
-    console.log(`Sharing file ${fileId} with ${emails.length} users...`);
+    console.log(`Sharing file ${fileId} with ${emails.length} users (Notification: ${sendNotification})...`);
 
     for (const email of emails) {
         try {
@@ -182,8 +183,7 @@ async function grantPermissions(drive, fileId, emailList) {
                     emailAddress: email
                 },
                 supportsAllDrives: true,
-                // Avoid spamming notifications if possible, or make optional? strict to user request for now.
-                sendNotificationEmail: false
+                sendNotificationEmail: sendNotification
             });
             console.log(`Granted 'reader' access to ${email}`);
         } catch (error) {
@@ -402,9 +402,10 @@ async function deleteFile(drive, fileId, fileName) {
  * @param {string} filePath - Path to the new file content
  * @param {string} shareWith - Emails to share with
  * @param {string} description - File description
+ * @param {boolean} sendNotification - Whether to send share notification
  * @returns {Promise<import('googleapis').drive_v3.Schema$File>} - Updated file data
  */
-async function updateFile(fileId, fileName, filePath, shareWith = '', description = '') {
+async function updateFile(fileId, fileName, filePath, shareWith = '', description = '', sendNotification = false) {
     console.log(`Found existing file '${fileName}'. Updating in place...`);
     actions.debug(`Updating ${fileName}(${fileId})`);
 
@@ -447,7 +448,7 @@ async function updateFile(fileId, fileName, filePath, shareWith = '', descriptio
     }
 
     if (shareWith) {
-        await grantPermissions(DRIVE, result.data.id, shareWith);
+        await grantPermissions(DRIVE, result.data.id, shareWith, sendNotification);
     }
 
     return result.data;
@@ -524,7 +525,8 @@ async function uploadFile(
     uploadFolderId,
     convertFiles = false,
     shareWith = '',
-    description = ''
+    description = '',
+    sendNotification = false
 ) {
     console.log(`Processing ${fileName} ...`);
     actions.debug(`fileName: ${fileName}`);
@@ -610,7 +612,7 @@ async function uploadFile(
 
     // Handle auto-sharing
     if (shareWith) {
-        await grantPermissions(DRIVE, result.data.id, shareWith);
+        await grantPermissions(DRIVE, result.data.id, shareWith, sendNotification);
     }
 
     return result.data;
@@ -648,7 +650,8 @@ async function applyRetentionPolicy(drive, folderId, fileName, maxCount) {
 
     if (files.length > maxCount) {
         const filesToDelete = files.slice(maxCount);
-        console.log(`Found ${files.length} versions of '${fileName}'. Deleting ${filesToDelete.length} old versions...`);
+        console.log(`Found ${files.length} versions of '${fileName}'. `
+            + `Deleting ${filesToDelete.length} old versions...`);
 
         for (const file of filesToDelete) {
             try {
@@ -677,6 +680,7 @@ async function main() {
         const maxRetentionCount = parseInt(getInputAndDebug('max_retention_count', { required: false }) || '0', 10);
         const convertFiles = getBooleanInputAndDebug('convert_files', { required: false });
         const shareWith = getInputAndDebug('share_with', { required: false });
+        const sendShareNotification = getBooleanInputAndDebug('send_share_notification', { required: false });
         const setMetadata = getBooleanInputAndDebug('set_metadata', { required: false });
 
         let description = '';
@@ -765,7 +769,8 @@ async function main() {
                             uploadFolderId,
                             convertFiles,
                             shareWith,
-                            description
+                            description,
+                            sendShareNotification
                         );
                         uploadCount++;
                         uploadedFiles.push(result);
@@ -799,7 +804,8 @@ async function main() {
                 uploadFolderId,
                 convertFiles,
                 shareWith,
-                description
+                description,
+                sendShareNotification
             );
             uploadCount++;
             uploadedFiles.push(result);
