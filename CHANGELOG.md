@@ -6,23 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [2.4.1] - 2025-12-17
+## [2.3.3] - 2025-12-17
 ### Added
 - **Share Notifications**: New `send_share_notification` input to opt-in for email alerts when files are shared.
+- **Smart Credentials**: Support for plain JSON service account keys (Base64 no longer required).
+- **Auto-Sharing**: New `share_with` input to immediately grant read access to specific emails.
+- **Conversion**: New `convert_files` input to automatically convert CSV/Excel/Markdown to Google formats.
+- **Retention Policy**: New `max_retention_count` input to automatically delete older files (Safe "Same-Name" Version History).
+- **Metadata**: New `set_metadata` input to inject GitHub context (commit, branch, run ID) into file descriptions.
+- **Resumable Uploads**: Automatically switches to resumable upload for files > 5MB.
 
 ### Fixed
 - **Authentication**: Fixed "Request is missing required authentication credential" error by sanitizing private key newlines and correctly handling the optional owner parameter.
 - **Release**: Ensured `dist/index.js` is correctly updated with the latest fixes.
-- **Retention Policy**: Updated `max_retention_count` to use safe, "Version History" logic. It now keeps the N most recent files with the *same name* instead of deleting unrelated files in the folder.
-
-## [2.4.0] - 2025-12-17
-### Added
-- **Smart Credentials**: Support for plain JSON service account keys (Base64 no longer required).
-- **Auto-Sharing**: New `share_with` input to immediately grant read access to specific emails.
-- **Conversion**: New `convert_files` input to automatically convert CSV/Excel/Markdown to Google formats.
-- **Retention Policy**: New `max_retention_count` input to automatically delete older files.
-- **Metadata**: New `set_metadata` input to inject GitHub context (commit, branch, run ID) into file descriptions.
-- **Resumable Uploads**: Automatically switches to resumable upload for files > 5MB.
 
 ### Changed
 - Refactored `src/index.js` for better testability.

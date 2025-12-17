@@ -25,7 +25,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload Artifacts TO Google Drive
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
       with:
         target: <LOCAL_PATH_TO_YOUR_FILE>
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -41,11 +41,12 @@ steps:
 - Support for custom file naming
 - Secure handling of Google Drive credentials
 - Multiple file handling strategies (delete, update, or add new)
-- Automated Retention Policy (keep only N most recent files)
-- Automatic format conversion (e.g., CSV → Google Sheets, Markdown → Google Docs)
-- Auto-Sharing: Grant immediate access to teammates via email list
-- Traceability: Inject build metadata (Commit, Branch, Run Link) into file description
-- Smart handling of large files (automatically switches to resumable upload for files > 5MB)
+- **Safe Per-File Retention Policy**: Automatically manage version history by keeping only the N most recent versions of *each specific file*, ensuring unrelated files are safe.
+- **Share Notifications**: Opt-in email alerts to notify recipients immediately when files are shared with them.
+- **Smart Format Conversion**: Automatically convert CSV/Excel/Markdown files to native Google Docs/Sheets formats.
+- **Auto-Sharing**: Grant immediate access to teammates via email list.
+- **Traceability**: Inject build metadata (Commit, Branch, Run Link) into file description.
+- **Smart Resumable Uploads**: Automatically handles large files (>5MB) with robust retry logic.
 
 ## 🔧 Setting Up Google Drive API
 
@@ -94,7 +95,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload Multiple Files TO Google Drive
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
       with:
         target: "dist/*.zip"
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -107,7 +108,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload to Nested Folder with Custom Name
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
       with:
         target: build/app.jar
         name: application-${{ github.sha }}.jar
@@ -122,7 +123,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload with Override
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
       with:
         target: build/latest.zip
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -136,7 +137,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload with Custom Ownership
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
       with:
         target: build/report.pdf
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -150,7 +151,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload with Update-in-Place Strategy
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
       with:
         target: build/latest.zip
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -164,7 +165,7 @@ steps:
     - uses: actions/checkout@v4.1.1
 
     - name: Upload and Share
-      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+      uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
       with:
         target: build/release.zip
         credentials: ${{ secrets.YOUR_SERVICE_ACCOUNT_CREDENTIALS }}
@@ -224,7 +225,7 @@ The action provides the following outputs that can be used in subsequent steps:
 ```yaml
 - name: Upload to Google Drive
   id: upload
-  uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.4.1
+  uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
   with:
     credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
     parent_folder_id: ${{ secrets.GOOGLE_PARENT_FOLDER_ID }}
@@ -266,7 +267,7 @@ This project uses automated workflows to simplify the release process:
 2. **Creating a Release**:
    - Update the version in `package.json` and `CHANGELOG.md`
    - Merge changes to the master branch
-   - Create and push a new tag: `git tag v2.4.1 && git push origin v2.4.1`
+   - Create and push a new tag: `git tag v2.3.3 && git push origin v2.3.3`
    - The release workflow will automatically create a GitHub release
 
 ## 🔒 Security

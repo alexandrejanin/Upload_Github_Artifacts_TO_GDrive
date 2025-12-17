@@ -89,11 +89,43 @@ jobs:
               echo "Detected release commit for version $VERSION. Creating tag..."
               git tag $VERSION
               git push origin $VERSION
+
               echo "Tag $VERSION pushed successfully."
+              echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
             else
               echo "Could not parse version from commit message: $COMMIT_MSG"
             fi
           fi
           
           echo "Dist files updated successfully"
+
+      - name: Get version without v
+        if: env.RELEASE_VERSION != ''
+        id: get_version
+        run: echo "VERSION=${RELEASE_VERSION#v}" >> $GITHUB_OUTPUT
+
+      - name: Get Changelog Entry
+        if: env.RELEASE_VERSION != ''
+        id: changelog_reader
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.get_version.outputs.VERSION }}
+          path: ./CHANGELOG.md
+
+      - name: Create Release
+        if: env.RELEASE_VERSION != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ env.RELEASE_VERSION }}
+          tag_name: ${{ env.RELEASE_VERSION }}
+          body: ${{ steps.changelog_reader.outputs.changes }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/**/*
+            LICENSE
+            README.md
+            action.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
