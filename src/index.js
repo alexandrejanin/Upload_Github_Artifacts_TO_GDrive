@@ -698,10 +698,13 @@ async function main() {
         const auth = new google.auth.JWT(
             credentialsJSON.client_email,
             null,
-            credentialsJSON.private_key,
+            credentialsJSON.private_key.replace(/\\n/g, '\n'),
             scopes,
-            owner,
+            owner || undefined,
         );
+
+        // Explicitly authorize to check for credential issues strictly
+        await auth.authorize();
 
         // Set global `drive`
         DRIVE = google.drive({ version: 'v3', auth });
