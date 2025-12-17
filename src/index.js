@@ -695,6 +695,16 @@ async function main() {
             'https://www.googleapis.com/auth/drive',
             'https://www.googleapis.com/auth/drive.file',
         ];
+        if (!credentialsJSON.client_email) {
+            throw new Error('Credential parsing success but client_email is missing/empty');
+        }
+        if (!credentialsJSON.private_key) {
+            throw new Error('Credential parsing success but private_key is missing/empty');
+        }
+
+        console.log(`Parsed client_email: ${credentialsJSON.client_email}`);
+        console.log(`Parsed private_key length: ${credentialsJSON.private_key.length}`);
+
         const auth = new google.auth.JWT(
             credentialsJSON.client_email,
             null,
