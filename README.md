@@ -10,7 +10,11 @@ Github Action To Upload Artifacts to Google Drive Using A Google Drive API.
 
 Watch our comprehensive tutorial on how to use this action:
 
-[![Video Tutorial](https://img.shields.io/badge/Watch-Tutorial%20Video-red?style=for-the-badge&logo=youtube)](https://drive.google.com/file/d/1GsKSFmh5IpujFuOaKKsOYKvar-tf5etY/view?usp=sharing)
+[![Video Tutorial](assets/tutorial-thumbnail.png)](https://drive.google.com/file/d/1GsKSFmh5IpujFuOaKKsOYKvar-tf5etY/view?usp=sharing)
+
+> [!NOTE]
+> The video shows converting credentials to Base64 (**3:27 to 5:00**). **you can skip this part!**
+> You can now simply paste the plain JSON content into your GitHub Secret. Base64 is still supported but optional.
 
 This tutorial covers:
 - Setting up the Google Drive API
@@ -22,7 +26,7 @@ This tutorial covers:
 
 ```yaml
 steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v6
 
     - name: Upload Artifacts TO Google Drive
       uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
@@ -92,7 +96,7 @@ If you absolutely must upload to a personal user's drive and cannot use Shared D
 ### Upload multiple files using glob pattern:
 ```yaml
 steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v6
 
     - name: Upload Multiple Files TO Google Drive
       uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
@@ -105,7 +109,7 @@ steps:
 ### Upload to a nested folder with custom name:
 ```yaml
 steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v6
 
     - name: Upload to Nested Folder with Custom Name
       uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
@@ -120,7 +124,7 @@ steps:
 ### Upload with file override:
 ```yaml
 steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v6
 
     - name: Upload with Override
       uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
@@ -134,7 +138,7 @@ steps:
 ### Upload with custom ownership:
 ```yaml
 steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v6
 
     - name: Upload with Custom Ownership
       uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
@@ -148,7 +152,7 @@ steps:
 ### Using different replace modes:
 ```yaml
 steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v6
 
     - name: Upload with Update-in-Place Strategy
       uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
@@ -162,7 +166,7 @@ steps:
 ### Upload and Share with Notification:
 ```yaml
 steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v6
 
     - name: Upload and Share
       uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
@@ -262,13 +266,23 @@ The action provides the following outputs that can be used in subsequent steps:
 
 This project uses automated workflows to simplify the release process:
 
-1. **Automatic Dist Updates**: After successful CI runs on the master branch, the `dist/index.js` file is automatically updated with the latest build artifact.
+1. **Automatic Dist Updates**: After successful CI runs on the master branch, the `dist/index.js` file is automatically updated.
 
 2. **Creating a Release**:
    - Update the version in `package.json` and `CHANGELOG.md`
-   - Merge changes to the master branch
-   - Create and push a new tag: `git tag v2.3.3 && git push origin v2.3.3`
-   - The release workflow will automatically create a GitHub release
+   - Commit with the message format: `release: vX.Y.Z` (e.g., `git commit -m "release: v2.3.3"`)
+   - Push to master
+   - The workflow will automatically:
+     - Update `dist/`
+     - Create and push the Git Tag
+     - Create the GitHub Release with changelog notes
+
+## 🤝 Contributing & Support
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to get started.
+
+- **Need Help?** Check out our [Support Guide](SUPPORT.md).
+- **Behavior:** Please adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## 🔒 Security
 
@@ -276,4 +290,4 @@ For security best practices when using this action, please refer to our [Securit
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

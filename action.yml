@@ -1,5 +1,5 @@
 name: 'Upload Github-Actions Artifacts TO Google Drive'
-description: 'Securely upload files from GitHub Actions to Google Drive with support for multiple files, nested folders, and custom naming'
+description: 'Securely upload artifacts to Google Drive. Features: Glob patterns, Safe Retention Policy, Auto-Sharing + Notifications, and Format Conversion.'
 inputs:
   credentials:
     description: 'Google service account credentials (base64 encoded JSON)'
