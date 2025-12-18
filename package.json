@@ -1,12 +1,24 @@
 {
-  "name": "Upload_Github_Artifacts_TO_GDrive",
+  "name": "upload-github-artifacts-to-gdrive",
   "version": "2.3.3",
-  "description": "Github Action To Upload Artifacts to Google Drive using a service account",
+  "description": "Automates secure CI/CD artifact backups to Google Drive. Features per-file retention, auto-sharing, smart format conversion, and zero-config privacy.",
   "main": "index.js",
   "author": "Twiter.com@Jumbo810",
   "repository": "git@github.com:Jumbo810/Upload_Github_Artifacts_TO_GDrive.git",
   "license": "MIT",
   "private": true,
+  "keywords": [
+    "open-source",
+    "ci-cd",
+    "github-actions",
+    "automation",
+    "artifacts",
+    "backup",
+    "google-drive",
+    "google-drive-api",
+    "devops",
+    "productivity"
+  ],
   "scripts": {
     "lint": "eslint src",
     "test": "jest",

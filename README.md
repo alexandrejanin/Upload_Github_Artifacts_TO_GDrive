@@ -3,6 +3,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/Jumbo810/Upload_Github_Artifacts_TO_GDrive)](https://github.com/Jumbo810/Upload_Github_Artifacts_TO_GDrive/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/Jumbo810/Upload_Github_Artifacts_TO_GDrive/actions/workflows/ci.yml/badge.svg)](https://github.com/Jumbo810/Upload_Github_Artifacts_TO_GDrive/actions/workflows/ci.yml)
+[![Sponsor](https://img.shields.io/badge/Sponsor-Jumbo810-pink)](https://github.com/sponsors/Jumbo810)
 
 Github Action To Upload Artifacts to Google Drive Using A Google Drive API.
 
@@ -10,7 +11,9 @@ Github Action To Upload Artifacts to Google Drive Using A Google Drive API.
 
 Watch our comprehensive tutorial on how to use this action:
 
-[![Video Tutorial](assets/tutorial-thumbnail.png)](https://drive.google.com/file/d/1GsKSFmh5IpujFuOaKKsOYKvar-tf5etY/view?usp=sharing)
+<a href="https://drive.google.com/file/d/1GsKSFmh5IpujFuOaKKsOYKvar-tf5etY/view?usp=sharing" target="_blank">
+  <img src="assets/tutorial-thumbnail.png" width="512" alt="Video Tutorial">
+</a>
 
 > [!NOTE]
 > The video shows converting credentials to Base64 (**3:27 to 5:00**). **you can skip this part!**
