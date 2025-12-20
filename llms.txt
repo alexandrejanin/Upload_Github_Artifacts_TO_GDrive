@@ -1,0 +1,30 @@
+# Upload Github Artifacts TO Google Drive (Github Action)
+
+## Summary
+A GitHub Action that securely uploads CI/CD build artifacts to Google Drive. It is designed for DevOps pipelines requiring long-term storage, compliance/audit trails, and team sharing.
+
+## Key Features
+- **Secure Authentication**: Uses Service Account credentials (JSON) for OAUTH-free, non-interactive uploads.
+- **Privacy First**: No third-party servers; data moves directly from the GitHub Runner to Google Drive APIs.
+- **Smart Retention**: 'Safe Per-File Retention' policies (e.g., "keep only last 5 versions of `build.apk`") to manage storage costs.
+- **Resumable Uploads**: Automatically handles large files (>5MB) using Google Drive's chunked upload protocol specifically modified for unstable CI networks.
+- **Auto-Sharing**: Can automatically share uploaded files with specific team emails and send notifications.
+- **Format Conversion**: Detected CSV/Excel/Doc files can be auto-converted to Google Workspace formats.
+
+## Installation / Usage
+```yaml
+- uses: Jumbo810/Upload_Github_Artifacts_TO_GDrive@v2.3.3
+  with:
+    credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
+    parent_folder_id: ${{ secrets.GDRIVE_FOLDER_ID }}
+    target: "dist/app-release.apk"
+    max_retention_count: 5
+```
+
+## Architecture
+- **Runtime**: Node.js 20
+- **Dependencies**: `googleapis` (Drive v3), `@actions/core`
+- **Build**: Bundled with `@vercel/ncc` into a single `dist/index.js` for portability.
+
+## License
+MIT License. Free for commercial and private use.
