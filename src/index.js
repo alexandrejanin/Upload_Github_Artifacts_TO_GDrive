@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -133,7 +132,7 @@ function parseCredentials(credentials) {
         if (parsed.client_email && parsed.private_key) {
             return parsed;
         }
-    } catch (error) {
+    } catch {
         // If JSON parse fails, it might be base64
     }
 
