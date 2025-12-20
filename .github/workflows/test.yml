@@ -26,13 +26,13 @@ jobs:
         run: corepack enable
 
       - name: Install dependencies
-        run: yarn install
+        run: npm ci
 
       - name: Lint
-        run: yarn lint
+        run: npm run lint
 
       - name: Build
-        run: yarn build
+        run: npm run build
 
       - name: Create test file
         run: echo "This is a test file" > test-file.txt
