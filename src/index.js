@@ -115,7 +115,7 @@ async function withRetry(fn, operationName, maxRetries = MAX_RETRIES, baseDelay 
         }
     }
 
-    throw new Error(`${operationName} failed after ${maxRetries} attempts: ${lastError.message}`);
+    throw new Error(`${operationName} failed after ${maxRetries} attempts: ${lastError.message}`, { cause: lastError });
 }
 
 /**
@@ -146,7 +146,7 @@ function parseCredentials(credentials) {
         }
         return parsed;
     } catch (error) {
-        throw new Error(`Invalid credentials format: ${error.message}`);
+        throw new Error(`Invalid credentials format: ${error.message}`, { cause: error });
     }
 }
 
@@ -538,7 +538,7 @@ async function uploadFile(
     try {
         await fs.promises.access(filePath, fs.constants.R_OK);
     } catch (error) {
-        throw new Error(`Cannot access file ${filePath}: ${error.message}`);
+        throw new Error(`Cannot access file ${filePath}: ${error.message}`, { cause: error });
     }
 
     const fileStats = await fs.promises.stat(filePath);
@@ -606,7 +606,7 @@ async function uploadFile(
     actions.setOutput('file_id', result.data.id);
     actions.setOutput('file_name', result.data.name);
     if (result.data.webViewLink) {
-        actions.setOutput('web_view_links', result.data.webViewLink);
+        actions.setOutput('web_view_link', result.data.webViewLink);
     }
 
     // Handle auto-sharing
@@ -656,7 +656,7 @@ async function applyRetentionPolicy(drive, folderId, fileName, maxCount) {
             try {
                 await deleteFile(drive, file.id, file.name);
             } catch (error) {
-                console.error(`Failed to delete old version ${file.name} (${file.id}): ${error.message}`);
+                actions.warning(`Failed to delete old version ${file.name} (${file.id}): ${error.message}`);
                 // Continue deleting others even if one fails
             }
         }
@@ -727,7 +727,7 @@ async function main() {
             await DRIVE.about.get({ fields: 'user' });
             console.log('Authentication successful.');
         } catch (error) {
-            throw new Error(`Authentication failed: ${error.message}`);
+            throw new Error(`Authentication failed: ${error.message}`, { cause: error });
         }
 
         console.log('Getting folder id...');

@@ -53,8 +53,23 @@ inputs:
     required: false
     default: false
     type: boolean
+outputs:
+  file_id:
+    description: 'ID of the uploaded file (First file if multiple matched)'
+  file_ids:
+    description: 'Comma-separated IDs of all uploaded files'
+  file_name:
+    description: 'Name of the uploaded file (First file if multiple matched)'
+  file_names:
+    description: 'Comma-separated names of all uploaded files'
+  web_view_link:
+    description: 'Web view link of the uploaded file (First file if multiple matched)'
+  web_view_links:
+    description: 'Comma-separated web view links of all uploaded files'
+  upload_count:
+    description: 'Number of files successfully uploaded'
 runs:
-  using: 'node20'
+  using: 'node22'
   main: 'dist/index.js'
 branding:
   icon: upload-cloud

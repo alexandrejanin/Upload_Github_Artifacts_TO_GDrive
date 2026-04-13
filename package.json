@@ -1,6 +1,6 @@
 {
   "name": "upload-github-artifacts-to-gdrive",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "Automates secure CI/CD artifact backups to Google Drive. Features per-file retention, auto-sharing, smart format conversion, and zero-config privacy.",
   "main": "index.js",
   "author": "Twiter.com@Jumbo810",
@@ -25,17 +25,17 @@
     "build": "ncc build src/index.js"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@types/node": "^25.0.3",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.6.0",
     "@vercel/ncc": "^0.38.3",
-    "eslint": "^9.39.2",
-    "globals": "^16.5.0",
-    "jest": "^30.2.0",
-    "strip-ansi": "^7.1.0"
+    "eslint": "^10.2.0",
+    "globals": "^17.5.0",
+    "jest": "^30.3.0",
+    "strip-ansi": "^7.2.0"
   },
   "dependencies": {
-    "@actions/core": "^2.0.1",
-    "glob": "^13.0.0",
-    "googleapis": "^169.0.0"
+    "@actions/core": "^2.0.3",
+    "glob": "^13.0.6",
+    "googleapis": "^171.4.0"
   }
 }

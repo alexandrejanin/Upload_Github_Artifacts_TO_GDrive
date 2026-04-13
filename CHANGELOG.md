@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.3.4] - 2026-04-13
+### Added
+- **Formal Outputs**: Formally declared all action outputs in `action.yml` for better workflow integration and autocompletion.
+
+### Fixed
+- **Output Naming**: Fixed a typo where single file uploads were setting `web_view_links` instead of `web_view_link`.
+- **Logging**: Improved retention policy error logging by using GitHub Action warnings instead of console errors.
+
+### Changed
+- **Runtime**: Upgraded GitHub Action runtime to **Node.js 22** for better performance and long-term support.
+- **Dependencies**: Updated core dependencies (downgraded `@actions/core` to v2.x to maintain `ncc` compatibility).
+- **CI**: Cleaned up redundant steps in the CI workflow.
+
 ## [2.3.3] - 2025-12-17
 ### Added
 - **Share Notifications**: New `send_share_notification` input to opt-in for email alerts when files are shared.
