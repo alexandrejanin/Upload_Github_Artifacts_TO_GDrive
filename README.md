@@ -3,7 +3,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/Jumbo810/Upload_Github_Artifacts_TO_GDrive)](https://github.com/Jumbo810/Upload_Github_Artifacts_TO_GDrive/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/Jumbo810/Upload_Github_Artifacts_TO_GDrive/actions/workflows/ci.yml/badge.svg)](https://github.com/Jumbo810/Upload_Github_Artifacts_TO_GDrive/actions/workflows/ci.yml)
-[![Sponsor](https://img.shields.io/badge/Sponsor-Jumbo810-pink)](https://github.com/sponsors/Jumbo810)
+[![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/AllaodeenTariq)
 
 Github Action To Upload Artifacts to Google Drive Using A Google Drive API.
 
@@ -283,6 +283,11 @@ This project uses automated workflows to simplify the release process:
 ## 🤝 Contributing & Support
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to get started.
+
+### 💖 Support the Project
+
+If this project helped you save time or money, consider supporting its development via **PayPal**:
+- **PayPal**: [Donate via PayPal](https://paypal.me/JUMBO810)
 
 - **Need Help?** Check out our [Support Guide](SUPPORT.md).
 - **Behavior:** Please adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
